@@ -1,0 +1,10 @@
+prefix=/home/lijie/txaa/ubiq_proj/amr/opencore-amr-0.1.3/x86
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: OpenCORE AMR-NB
+Description: Adaptive Multi-Rate speech codec library
+Version: 0.1.3
+Libs: -L${libdir} -lopencore-amrnb
+Cflags: -I${includedir}
