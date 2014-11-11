@@ -95,16 +95,16 @@ FILE* amr_encode_open(const char *szOutputFileName, int nMode)
 	return fout;
 }
 
-int amr_encode_append_data(FILE *fp, char *pInputData, int nSize)
+int amr_encode_append_data(char *pInputData, int nSize, FILE *fpOutput)
 {
 	if (nSize != 320) return -1;
 
-	return amrnb_encode(pInputData, nSize, fp);
+	return amrnb_encode(pInputData, nSize, fpOutput);
 }
 
-void amr_encode_close(FILE *fp)
+void amr_encode_close(FILE *fpOutput)
 {
-	fclose(fp);
+	fclose(fpOutput);
 	amrnb_encode_uninit();
 }
 
@@ -127,10 +127,8 @@ FILE* amr_decode_open(const char *szInputFileName, int nMode)
 	return fp;
 }
 
-int amr_decode_convert(FILE *fp, unsigned char *pOutputData, int nSize)
+int amr_decode_convert(FILE *fp, char *pOutputData)
 {
-	if (nSize < 320) return -1;
-
 	unsigned char cData[32] = {0};
 	int nRet = fread(cData, (size_t)1, (size_t)amr_decode_nAmrSize, fp);
 
@@ -148,5 +146,39 @@ void amr_decode_close(FILE *fp)
 	amrnb_decode_uninit();
 }
 
+void buffer_pcm2amr_init(int nMode)
+{
+	amrnb_encode_init(nMode);
+}
 
+int buffer_pcm2amr_encode(char *pInputData, int nSize, char *pOutputData)
+{
+	if (nSize != 320) return -1;
+
+	return amrnb_encode_buf(pInputData, nSize, pOutputData);
+}
+
+void buffer_pcm2amr_uninit()
+{
+	amrnb_encode_uninit();
+}
+
+int buffer_amr2pcm_init(int nMode)
+{
+	amr_decode_nAmrSize = amrnb_read_bytes(nMode) + 1;
+	amrnb_decode_init();
+	return amr_decode_nAmrSize;
+}
+
+int buffer_amr2pcm_decode(char *pInputData, int nSize, char *pOutputData)
+{
+	if (nSize != amr_decode_nAmrSize) return -1;
+
+	return amrnb_decode_buf(pInputData, nSize, pOutputData);
+}
+
+void buffer_amr2pcm_uninit()
+{
+	amrnb_decode_uninit();
+}
 

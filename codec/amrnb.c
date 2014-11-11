@@ -155,7 +155,7 @@ int amrnb_decode(char *pData, int nSize, FILE *fp)
 }
 
 // same as amrnb_decode
-int amrnb_decode_buf(char *pData, int nSize, /*FILE *fp*/ unsigned char *pOutput)
+int amrnb_decode_buf(char *pData, int nSize, /*FILE *fp*/ char *pOutput)
 {
 	int nRet = 0;
 	static const int nsamples = NUM_SAMPLES;
@@ -329,6 +329,83 @@ int amrnb_encode(char *pData, int nSize, FILE *fp)
 		
 		nOutputSize = 1 + framesz;
 		nRet = fwrite(output, (size_t)1, nOutputSize, fp);
+	
+		bs_free(payload);
+		nSize -= buff_size;
+
+	} // end of while
+	return nRet;
+}
+
+// same as amrnb_encode
+int amrnb_encode_buf(char *pData, int nSize, /*FILE *fp*/ char *pOutput)
+{
+	int nRet = 0;
+	unsigned int unitary_buff_size = sizeof (int16_t) * NUM_SAMPLES;
+	unsigned int buff_size = unitary_buff_size * amrnb_ptime / 20;
+	uint8_t tmp[OUT_MAX_SIZE];
+	int16_t samples[buff_size];
+	uint8_t	tmp1[20*OUT_MAX_SIZE];
+	bs_t	*payload = NULL;
+	int		nCmr = 0xF;
+	int		nFbit = 1, nFTbits = 0, nQbit = 0;
+	int		nReserved = 0, nPadding = 0;
+	int		nFrameData = 0, framesz = 0, nWrite = 0;
+	int		offset = 0;
+
+	uint8_t output[OUT_MAX_SIZE * buff_size / unitary_buff_size + 1];
+	int 	nOutputSize = 0;
+
+	while (nSize >= buff_size)
+	{
+		memset(output, 0, sizeof(output));
+		memcpy((uint8_t*)samples, pData, buff_size);
+		payload = bs_new(output, OUT_MAX_SIZE * buff_size / unitary_buff_size + 1);
+		
+		nFrameData = 0; nWrite = 0;
+		for (offset = 0; offset < buff_size; offset += unitary_buff_size)
+		{
+			int ret = Encoder_Interface_Encode(amrnb_enc, amrnb_mode, &samples[offset / sizeof (int16_t)], tmp, amrnb_dtx);
+			if (ret <= 0 || ret > 32)
+			{
+				printf("Encoder returned %i\n", ret);
+				continue;
+			}
+			nFbit = tmp[0] >> 7;
+			nFbit = (offset+buff_size >= unitary_buff_size) ? 0 : 1;
+			nFTbits = tmp[0] >> 3 & 0x0F;
+			if(nFTbits > MAX_FRAME_TYPE)
+			{
+				printf("%s, Bad amr toc, index=%i (MAX=%d)\n", __func__, nFTbits, MAX_FRAME_TYPE);
+				break;
+			}
+			nQbit = tmp[0] >> 2 & 0x01;
+			framesz = amr_frame_sizes[nFTbits];
+			
+			// Frame 데이터를 임시로 복사
+			memcpy(&tmp1[nFrameData], &tmp[1], framesz);
+			nFrameData += framesz;
+			
+			// write TOC
+			bs_write_u(payload, 1, nFbit);
+			bs_write_u(payload, 4, nFTbits);
+			bs_write_u(payload, 1, nQbit);
+			if(b_octet_align == 1)
+			{	// octet-align, add padding bit
+				bs_write_u(payload, 2, nPadding);
+			}
+
+		} // end of for
+		if(offset > 0)
+		{
+			nWrite = bs_write_bytes_ex(payload, tmp1, nFrameData);
+		}
+		
+		nOutputSize = 1 + framesz;
+		/* nRet = fwrite(output, (size_t)1, nOutputSize, fp); */
+		nRet = nOutputSize;
+		memcpy(pOutput, output, nOutputSize);
+		// printf("nRet == %d, nSize == %d\n", nRet, nOutputSize);
 	
 		bs_free(payload);
 		nSize -= buff_size;

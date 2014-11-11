@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
 		nRet = fread(pInputData, 1, 320, fin);
 		if (320 == nRet)
 		{
-			nRet = amr_encode_append_data(fp, pInputData, 320);
+			nRet = amr_encode_append_data(pInputData, 320, fp);
 			if (nRet < 0)
 			{
 				amr_encode_close(fp);

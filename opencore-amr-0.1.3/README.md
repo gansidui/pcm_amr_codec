@@ -7,7 +7,7 @@ x86编译：
 
 make clean -w
 
-./configure --prefix='/home/lijie/txaa/ubiq_proj/amr/opencore-amr-0.1.3/x86'
+./configure --prefix='/home/lijie/amr/opencore-amr-0.1.3/x86'
 
 make
 
@@ -18,7 +18,7 @@ arm编译：
 
 make clean -w
 
-./configure --host=arm-hisiv100nptl-linux --prefix='/home/lijie/txaa/ubiq_proj/amr/opencore-amr-0.1.3/hisi'
+./configure --host=arm-hisiv100nptl-linux --prefix='/home/lijie/amr/opencore-amr-0.1.3/hisi'
 
 make
 

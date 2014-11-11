@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
 	int nRet = 0;	
 	while (1)
 	{
-		nRet = amr_decode_convert(fp, pOutputData, 320);
+		nRet = amr_decode_convert(fp, pOutputData);
 		if (nRet > 0)
 		{
 			// pOutputData[0] -- pOutputData[nRet-1] 这段buffer为转换后的pcm流
